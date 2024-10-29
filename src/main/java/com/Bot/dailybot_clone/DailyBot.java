@@ -27,24 +27,34 @@ public class DailyBot {
         this.channelId = channelId;
         this.slackToken = slackToken;
         this.slack = Slack.getInstance();
-        this.teamMembers = List.of("U07TNGL0S74");
+        this.teamMembers = List.of("U07TNGL0S74"); // Add the IDs of the team members here
     }
 
     public void sendDailyQuestions() {
         for (String memberId : teamMembers) {
             userResponses.put(memberId, new UserResponseTracker());
-            sendQuestion(memberId, 0);
+            sendQuestion(memberId); // Start with the first question
         }
     }
 
-    private void sendQuestion(String memberId, int questionIndex) {
-        try {
-            slack.methods(slackToken).chatPostMessage(ChatPostMessageRequest.builder()
-                    .channel(memberId)
-                    .text(QUESTIONS[questionIndex])
-                    .build());
-        } catch (IOException | SlackApiException e) {
-            e.printStackTrace();
+    private void sendQuestion(String memberId) {
+        UserResponseTracker tracker = userResponses.get(memberId);
+
+        // Only send the next question if the user has not completed the questions
+        if (tracker != null && !tracker.isCompleted()) {
+            int questionIndex = tracker.getQuestionIndex();
+
+            // Only send the current question
+            if (questionIndex < QUESTIONS.length) {
+                try {
+                    slack.methods(slackToken).chatPostMessage(ChatPostMessageRequest.builder()
+                            .channel(memberId)
+                            .text(QUESTIONS[questionIndex])
+                            .build());
+                } catch (IOException | SlackApiException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -53,20 +63,20 @@ public class DailyBot {
         String responseText = event.getText();
         UserResponseTracker tracker = userResponses.get(userId);
 
-
+        // If no tracker found for user or response is empty, return early
         if (tracker == null || responseText.isEmpty()) return;
 
-
+        // Record the user's response
         tracker.recordResponse(responseText);
-        int nextQuestionIndex = tracker.getQuestionIndex();
 
-
-        if (nextQuestionIndex < QUESTIONS.length) {
-            sendQuestion(userId, nextQuestionIndex);
+        // Check if the user has completed all questions
+        if (!tracker.isCompleted()) {
+            // Send the next question
+            sendQuestion(userId);
         } else {
-
+            // Send summary to the channel after all questions are answered
             sendSummaryToChannel(userId, tracker);
-            userResponses.remove(userId);
+            userResponses.remove(userId); // Remove the user from tracking after summary is sent
         }
     }
 
