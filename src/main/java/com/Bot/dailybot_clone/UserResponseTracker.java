@@ -10,14 +10,12 @@ public class UserResponseTracker {
     private boolean isCompleted = false;
 
     public void recordResponse(String response) {
-
         if (!isCompleted) {
             while (responses.size() <= questionIndex) {
                 responses.add("");
             }
             responses.set(questionIndex, response);
             questionIndex++;
-
 
             if (questionIndex >= 3) {
                 isCompleted = true;
@@ -34,6 +32,6 @@ public class UserResponseTracker {
     }
 
     public boolean isCompleted() {
-        return isCompleted; // Check if the user has completed all questions
+        return isCompleted;
     }
 }
