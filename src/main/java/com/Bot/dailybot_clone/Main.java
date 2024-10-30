@@ -40,7 +40,8 @@ public class Main {
 		Trigger trigger = TriggerBuilder.newTrigger()
 				.withIdentity("dailyBotTrigger")
 				.startNow()
-				.withSchedule(CronScheduleBuilder.cronSchedule("0 0/5 * * * ?"))
+				.withSchedule(CronScheduleBuilder.cronSchedule("0 57 1 ? * MON-FRI"))
+
 				.build();
 
 		scheduler.scheduleJob(job, trigger);
