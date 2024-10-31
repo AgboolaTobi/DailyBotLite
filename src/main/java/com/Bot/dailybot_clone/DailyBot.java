@@ -58,7 +58,7 @@ public class DailyBot {
                     continue;
                 }
 
-                userResponses.put(memberId, new UserResponseTracker());
+                userResponses.put(memberId, new UserResponseTracker(channelId));
                 sendQuestion(memberId);
             }
         }
@@ -81,7 +81,7 @@ public class DailyBot {
     private void sendQuestion(String memberId) {
         UserResponseTracker tracker = userResponses.get(memberId);
 
-        if (tracker != null && !tracker.isCompleted()) {
+        if (tracker != null && tracker.isCompleted()) {
             int questionIndex = tracker.getQuestionIndex();
 
             if (questionIndex < QUESTIONS.length) {
@@ -106,7 +106,7 @@ public class DailyBot {
 
         tracker.recordResponse(responseText);
 
-        if (!tracker.isCompleted()) {
+        if (tracker.isCompleted()) {
             sendQuestion(userId);
         } else {
             sendSummaryToChannels(userId, tracker);
@@ -123,9 +123,7 @@ public class DailyBot {
             summary.append(QUESTIONS[i]).append(": ").append(tracker.getResponse(i)).append("\n");
         }
 
-        for (String channelId : channelIds) {
-            sendSummaryToChannel(channelId, summary.toString());
-        }
+        sendSummaryToChannel(tracker.getChannelId(), summary.toString());
         sendSummaryToChannel(summaryChannelId, summary.toString());
     }
 

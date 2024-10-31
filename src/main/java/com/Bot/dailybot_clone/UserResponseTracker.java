@@ -8,6 +8,11 @@ public class UserResponseTracker {
     private int questionIndex = 0;
     private final List<String> responses = new ArrayList<>();
     private boolean isCompleted = false;
+    private final String channelId;
+
+    public UserResponseTracker(String channelId) {
+        this.channelId = channelId;
+    }
 
     public void recordResponse(String response) {
         if (!isCompleted) {
@@ -32,6 +37,10 @@ public class UserResponseTracker {
     }
 
     public boolean isCompleted() {
-        return isCompleted;
+        return !isCompleted;
+    }
+
+    public String getChannelId() {
+        return channelId;
     }
 }

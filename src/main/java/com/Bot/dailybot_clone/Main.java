@@ -16,12 +16,12 @@ public class Main {
 		Properties properties = new Properties();
 		try (InputStream input = Main.class.getClassLoader().getResourceAsStream("secret.properties")) {
 			if (input == null) {
-				System.err.println("Error: secret.properties file not found. Ensure it exists in src/main/resources.");
+				System.err.println("File not found.");
 				return;
 			}
 			properties.load(input);
 		} catch (IOException ex) {
-			System.err.println("Error loading secret.properties.");
+			System.err.println("Error loading File.");
 			ex.printStackTrace();
 			return;
 		}
@@ -32,7 +32,7 @@ public class Main {
 		String summaryChannelId = properties.getProperty("slack.summaryChannelId");
 
 		if (slackToken == null || slackToken.isEmpty() || channelIds == null || channelIds.isEmpty() || summaryChannelId == null || summaryChannelId.isEmpty() || xappToken == null || xappToken.isEmpty()) {
-			System.err.println("Error: Missing required properties in secret.properties file.");
+			System.err.println("Error: Missing required targeted file.");
 			return;
 		}
 
@@ -52,7 +52,7 @@ public class Main {
 			Trigger trigger = TriggerBuilder.newTrigger()
 					.withIdentity("dailyBotTrigger")
 					.startNow()
-					.withSchedule(CronScheduleBuilder.cronSchedule("0 1 5 ? * MON-FRI"))
+					.withSchedule(CronScheduleBuilder.cronSchedule("0 10 10 ? * MON-FRI"))
 					.build();
 
 			scheduler.scheduleJob(job, trigger);
@@ -77,12 +77,4 @@ public class Main {
     }
 
 
-//	public static String getPropertyOrDefault(Properties properties, String key, String defaultValue) {
-//		String value = properties.getProperty(key);
-//		if (value == null) {
-//			System.err.println("Property " + key + " is missing, using default value: " + defaultValue);
-//			return defaultValue;
-//		}
-//		return value;
-//	}
 }
