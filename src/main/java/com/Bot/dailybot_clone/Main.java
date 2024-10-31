@@ -52,7 +52,7 @@ public class Main {
 			Trigger trigger = TriggerBuilder.newTrigger()
 					.withIdentity("dailyBotTrigger")
 					.startNow()
-					.withSchedule(CronScheduleBuilder.cronSchedule("0 3 17 ? * MON-FRI"))
+					.withSchedule(CronScheduleBuilder.cronSchedule("0 1 5 ? * MON-FRI"))
 					.build();
 
 			scheduler.scheduleJob(job, trigger);
@@ -77,12 +77,12 @@ public class Main {
     }
 
 
-	public static String getPropertyOrDefault(Properties properties, String key, String defaultValue) {
-		String value = properties.getProperty(key);
-		if (value == null) {
-			System.err.println("Property " + key + " is missing, using default value: " + defaultValue);
-			return defaultValue;
-		}
-		return value;
-	}
+//	public static String getPropertyOrDefault(Properties properties, String key, String defaultValue) {
+//		String value = properties.getProperty(key);
+//		if (value == null) {
+//			System.err.println("Property " + key + " is missing, using default value: " + defaultValue);
+//			return defaultValue;
+//		}
+//		return value;
+//	}
 }
