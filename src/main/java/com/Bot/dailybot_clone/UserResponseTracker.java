@@ -4,13 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserResponseTracker {
-
     private int questionIndex = 0;
     private final List<String> responses = new ArrayList<>();
     private boolean isCompleted = false;
+    private final String channelId;
+    private boolean awaitingNextChannel = false;
 
-    public void recordResponse(String response) {
+    public UserResponseTracker(String channelId) {
+        this.channelId = channelId;
+    }
 
+    public synchronized void recordResponse(String response) {
         if (!isCompleted) {
             while (responses.size() <= questionIndex) {
                 responses.add("");
@@ -18,22 +22,37 @@ public class UserResponseTracker {
             responses.set(questionIndex, response);
             questionIndex++;
 
-
-            if (questionIndex >= 3) {
+            if (questionIndex >= DailyBot.getQuestions().length) {
                 isCompleted = true;
+                awaitingNextChannel = true;
             }
         }
     }
 
-    public int getQuestionIndex() {
+    public synchronized int getQuestionIndex() {
         return questionIndex;
     }
 
-    public String getResponse(int index) {
+    public synchronized String getResponse(int index) {
         return index < responses.size() ? responses.get(index) : "";
     }
 
-    public boolean isCompleted() {
-        return isCompleted; // Check if the user has completed all questions
+    public synchronized boolean isCompleted() {
+        return isCompleted;
+    }
+
+    public String getChannelId() {
+        return channelId;
+    }
+
+    public synchronized boolean isAwaitingNextChannel() {
+        return awaitingNextChannel;
+    }
+
+    public synchronized void resetTrackerForNextChannel() {
+        questionIndex = 0;
+        responses.clear();
+        isCompleted = false;
+        awaitingNextChannel = false;
     }
 }
