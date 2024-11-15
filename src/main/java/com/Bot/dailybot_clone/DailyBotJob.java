@@ -12,10 +12,11 @@ public class DailyBotJob implements Job {
     private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
 
     public static void initializeBot(List<String> channelIds, String summaryChannelId, String slackToken, List<String> targetedEmails) {
-        if (channelIds == null || channelIds.isEmpty() || summaryChannelId == null) {
-            throw new IllegalArgumentException("Channel IDs and Summary Channel ID cannot be null or empty");
+        System.out.println("Initializing DailyBot with channels: " + channelIds + " and targeted emails: " + targetedEmails);
+        if (channelIds == null || summaryChannelId == null || slackToken == null || targetedEmails == null) {
+            throw new IllegalArgumentException("Required parameters cannot be null");
         }
-        bot = new DailyBot(channelIds, summaryChannelId, slackToken, targetedEmails);
+        bot = new DailyBot(slackToken, summaryChannelId, channelIds, targetedEmails);
     }
 
     @Override
@@ -23,7 +24,6 @@ public class DailyBotJob implements Job {
         if (bot == null) {
             throw new IllegalStateException("DailyBot has not been initialized");
         }
-
         executorService.submit(() -> bot.sendDailyQuestionsToChannelMembersSequentially());
     }
 }
