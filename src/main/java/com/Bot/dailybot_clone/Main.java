@@ -20,7 +20,7 @@ public class Main {
 
 		// Hard-coded channel IDs and targeted emails(only for testing purposes)
 		List<String> channelIds = List.of("C07VD9KLH5W");
-		List<String> targetedEmails = List.of("agboola.tobi@nomba.com");
+		List<String> targetedEmails = List.of("agboola.tobi@nomba.com", "akin.akinbobola@nomba.com");
 
 		// Ensure environment variables are loaded(debugging...)
 		if (slackToken == null || slackToken.isEmpty() || summaryChannelId == null || summaryChannelId.isEmpty()) {
@@ -43,9 +43,6 @@ public class Main {
 
 		// Initializing the bot with Slack token and other required info
 		DailyBotJob.initializeBot(channelIds, summaryChannelId, slackToken, targetedEmails);
-
-		// Manually triggering standup questions for testing
-		DailyBotJob.bot.sendDailyQuestionsNow();
 
 		// Setting up an HTTP endpoint using SparkJava
 		Service http = Service.ignite().port(port);
@@ -76,6 +73,14 @@ public class Main {
 
 			res.status(200);
 			return "ok";
+		});
+
+		http.get("/trigger", (req, res) -> {
+			// Endpoint to trigger sending daily questions
+			DailyBotJob.bot.sendDailyQuestionsNow();
+			System.out.println("/trigger endpoint called - Questions sent");
+			res.status(200);
+			return "Trigger executed";
 		});
 	}
 }
