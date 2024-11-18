@@ -1,3 +1,5 @@
+// Updated Main class to use environment variables
+
 package com.Bot.dailybot_clone;
 
 import com.google.gson.JsonObject;
@@ -13,17 +15,19 @@ public class Main {
 	public static void main(String[] args) {
 		Dotenv dotenv = Dotenv.load();  // Loading environment variables from .env file
 
+		// Loading environment variables
 		String slackToken = dotenv.get("SLACK_TOKEN");
 		String summaryChannelId = dotenv.get("SUMMARY_CHANNEL_ID");
+		String targetChannelId = dotenv.get("TARGET_CHANNEL_ID");
+		String targetedEmailsStr = dotenv.get("TARGET_MEMBER_EMAILS");
 		String portEnv = dotenv.get("PORT", "8080");
 		int port = Integer.parseInt(portEnv);
 
-		// Hard-coded channel IDs and targeted emails(only for testing purposes)
-		List<String> channelIds = List.of("C07VD9KLH5W");
-		List<String> targetedEmails = List.of("agboola.tobi@nomba.com", "akin.akinbobola@nomba.com");
+		// Converted the comma-separated list of emails to a List
+		List<String> targetedEmails = List.of(targetedEmailsStr.replaceAll("\"", "").split(","));
 
-		// Ensure environment variables are loaded(debugging...)
-		if (slackToken == null || slackToken.isEmpty() || summaryChannelId == null || summaryChannelId.isEmpty()) {
+		// Ensured environment variables are loaded
+		if (slackToken == null || slackToken.isEmpty() || targetChannelId == null || targetChannelId.isEmpty()) {
 			System.err.println("Error: Missing required configuration");
 			System.exit(1);
 		}
@@ -42,7 +46,7 @@ public class Main {
 		}
 
 		// Initializing the bot with Slack token and other required info
-		DailyBotJob.initializeBot(channelIds, summaryChannelId, slackToken, targetedEmails);
+		DailyBotJob.initializeBot(List.of(targetChannelId), summaryChannelId, slackToken, targetedEmails);
 
 		// Setting up an HTTP endpoint using SparkJava
 		Service http = Service.ignite().port(port);

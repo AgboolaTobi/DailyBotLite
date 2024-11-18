@@ -16,7 +16,7 @@ public class DailyBotJob implements Job {
         if (channelIds == null || summaryChannelId == null || slackToken == null || targetedEmails == null) {
             throw new IllegalArgumentException("Required parameters cannot be null");
         }
-        bot = new DailyBot(slackToken, summaryChannelId, channelIds, targetedEmails);
+        bot = new DailyBot(slackToken, channelIds, targetedEmails);
     }
 
     @Override

@@ -20,7 +20,6 @@ import java.util.concurrent.Executors;
 public class DailyBot {
     private final Slack slack;
     private final String slackToken;
-    private final String summaryChannelId;
     private final List<String> channelIds;
     private final List<String> targetedEmails;
     private final Map<String, UserResponseTracker> userResponses = new HashMap<>();
@@ -39,9 +38,8 @@ public class DailyBot {
         return QUESTIONS;
     }
 
-    public DailyBot(String slackToken, String summaryChannelId, List<String> channelIds, List<String> targetedEmails) {
+    public DailyBot(String slackToken, List<String> channelIds, List<String> targetedEmails) {
         this.slackToken = slackToken;
-        this.summaryChannelId = summaryChannelId;
         this.channelIds = channelIds;
         this.targetedEmails = targetedEmails;
         this.slack = Slack.getInstance();
@@ -60,30 +58,30 @@ public class DailyBot {
     }
 
     public void sendDailyQuestionsNow() {
-        System.out.println("Triggering daily questions now...");
+        System.out.println("Triggering daily questions now..."); // debugging...
         sendDailyQuestionsToChannelMembersSequentially(); // Trigger sending questions to all channel members manually
     }
 
     public void sendDailyQuestionsToChannelMembersSequentially() {
         for (String channelId : channelIds) {
-            System.out.println("Processing channel: " + channelId);
+            System.out.println("Processing channel: " + channelId); // debugging...
             List<String> memberIds = getChannelMembers(channelId);
             for (String memberId : memberIds) {
-                System.out.println("Processing member: " + memberId);
+                System.out.println("Processing member: " + memberId); // debugging...
                 if (memberId.equals(botUserId) || completedUsers.containsKey(memberId)) {
-                    System.out.println("Skipping member: " + memberId + " (bot user or already completed)");
+                    System.out.println("Skipping member: " + memberId + " (bot user or already completed)"); // debugging...
                     continue;
                 }
 
                 String email = getUserEmail(memberId);
                 if (email == null || email.isEmpty() || !targetedEmails.contains(email)) {
-                    System.out.println("Skipping member: " + memberId + " (not targeted or email unavailable)");
+                    System.out.println("Skipping member: " + memberId + " (not targeted or email unavailable)"); //debugging...
                     continue;
                 }
 
                 synchronized (userCurrentChannel) {
                     if (!userCurrentChannel.containsKey(memberId)) {
-                        System.out.println("Sending question to member: " + memberId + " in channel: " + channelId);
+                        System.out.println("Sending question to member: " + memberId + " in channel: " + channelId); // debugging
                         userCurrentChannel.put(memberId, channelId);
                         String userChannelKey = memberId + "-" + channelId;
                         userResponses.put(userChannelKey, new UserResponseTracker(channelId));
@@ -131,7 +129,7 @@ public class DailyBot {
             if (response.isOk()) {
                 return response.getMembers();
             } else {
-                System.err.println("Error fetching channel members: " + response.getError());
+                System.err.println("Error fetching channel members: " + response.getError()); // debugging...
             }
         } catch (IOException | SlackApiException exception) {
             exception.printStackTrace();
@@ -152,7 +150,7 @@ public class DailyBot {
                             .channel(memberId)
                             .text(QUESTIONS[questionIndex])
                             .build());
-                    System.out.println("Sent question: " + QUESTIONS[questionIndex] + " to member: " + memberId);
+                    System.out.println("Sent question: " + QUESTIONS[questionIndex] + " to member: " + memberId); //debugging...
                 } catch (IOException | SlackApiException e) {
                     e.printStackTrace();
                 }
@@ -173,7 +171,7 @@ public class DailyBot {
                 userCurrentChannel.put(userId, channelId);
                 userResponses.put(userChannelKey, tracker);
                 sendQuestion(userId, channelId);
-                System.out.println("Notified next channel: " + channelId + " for user: " + userId);
+                System.out.println("Notified next channel: " + channelId + " for user: " + userId); //debugging...
                 break;
             }
         }
@@ -192,7 +190,6 @@ public class DailyBot {
         }
 
         sendSummaryToChannel(tracker.getChannelId(), summary.toString());
-        sendSummaryToChannel(summaryChannelId, "Summary from channel: " + getChannelNameById(tracker.getChannelId()) + "\n" + summary.toString());
     }
 
     private void sendSummaryToChannel(String channelId, String summary) {
@@ -201,7 +198,7 @@ public class DailyBot {
                     .channel(channelId)
                     .text(summary)
                     .build());
-            System.out.println("Sent summary to channel: " + channelId);
+            System.out.println("Sent summary to channel: " + channelId); //debugging...
         } catch (IOException | SlackApiException e) {
             e.printStackTrace();
         }
@@ -214,7 +211,7 @@ public class DailyBot {
                 User user = response.getUser();
                 return user.getRealName();
             } else {
-                System.err.println("Error fetching user info: " + response.getError());
+                System.err.println("Error fetching user info: " + response.getError()); //debugging...
             }
         } catch (IOException | SlackApiException e) {
             e.printStackTrace();
@@ -231,7 +228,7 @@ public class DailyBot {
                     return user.getProfile().getEmail();
                 }
             } else {
-                System.err.println("Error fetching user email: " + response.getError());
+                System.err.println("Error fetching user email: " + response.getError()); //debugging...
             }
         } catch (IOException | SlackApiException e) {
             e.printStackTrace();
@@ -245,7 +242,7 @@ public class DailyBot {
             if (response.isOk()) {
                 return response.getChannel().getName();
             } else {
-                System.err.println("Error fetching channel name: " + response.getError());
+                System.err.println("Error fetching channel name: " + response.getError()); //debugging...
             }
         } catch (IOException | SlackApiException e) {
             e.printStackTrace();
