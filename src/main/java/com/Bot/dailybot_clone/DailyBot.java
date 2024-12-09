@@ -59,35 +59,38 @@ public class DailyBot {
 
     public void sendDailyQuestionsNow() {
         System.out.println("Triggering daily questions now..."); // debugging...
-        sendDailyQuestionsToChannelMembersSequentially(); // Trigger sending questions to all channel members manually
+        sendDailyQuestionsToChannelMembersConcurrently(); // Trigger sending questions to all channel members manually
     }
 
-    public void sendDailyQuestionsToChannelMembersSequentially() {
+    public void sendDailyQuestionsToChannelMembersConcurrently() {
         for (String channelId : channelIds) {
             System.out.println("Processing channel: " + channelId); // debugging...
             List<String> memberIds = getChannelMembers(channelId);
             for (String memberId : memberIds) {
-                System.out.println("Processing member: " + memberId); // debugging...
-                if (memberId.equals(botUserId) || completedUsers.containsKey(memberId)) {
-                    System.out.println("Skipping member: " + memberId + " (bot user or already completed)"); // debugging...
-                    continue;
-                }
-
-                String email = getUserEmail(memberId);
-                if (email == null || email.isEmpty() || !targetedEmails.contains(email)) {
-                    System.out.println("Skipping member: " + memberId + " (not targeted or email unavailable)"); //debugging...
-                    continue;
-                }
-
-                synchronized (userCurrentChannel) {
-                    if (!userCurrentChannel.containsKey(memberId)) {
-                        System.out.println("Sending question to member: " + memberId + " in channel: " + channelId); // debugging
-                        userCurrentChannel.put(memberId, channelId);
-                        String userChannelKey = memberId + "-" + channelId;
-                        userResponses.put(userChannelKey, new UserResponseTracker(channelId));
-                        sendQuestion(memberId, channelId);
+                executorService.submit(() -> {
+                    System.out.println("Processing member: " + memberId); // debugging...
+                    if (memberId.equals(botUserId) || completedUsers.containsKey(memberId)) {
+                        System.out.println("Skipping member: " + memberId + " (bot user or already completed)"); // debugging...
+                        return;
                     }
-                }
+
+
+                    String email = getUserEmail(memberId);
+                    if (email == null || email.isEmpty() || !targetedEmails.contains(email)) {
+                        System.out.println("Skipping member: " + memberId + " (not targeted or email unavailable)"); //debugging...
+                        return;
+                    }
+
+                    synchronized (userCurrentChannel) {
+                        if (!userCurrentChannel.containsKey(memberId)) {
+                            System.out.println("Sending question to member: " + memberId + " in channel: " + channelId); // debugging
+                            userCurrentChannel.put(memberId, channelId);
+                            String userChannelKey = memberId + "-" + channelId;
+                            userResponses.put(userChannelKey, new UserResponseTracker(channelId));
+                            sendQuestion(memberId, channelId);
+                        }
+                    }
+                });
             }
         }
     }
@@ -96,31 +99,33 @@ public class DailyBot {
         String userId = event.get("user").getAsString();
         String responseText = event.get("text").getAsString();
 
-        synchronized (userCurrentChannel) {
-            String currentChannelId = userCurrentChannel.get(userId);
-            if (currentChannelId != null) {
-                String userChannelKey = userId + "-" + currentChannelId;
-                UserResponseTracker tracker = userResponses.get(userChannelKey);
-                if (tracker == null || responseText.isEmpty()) return;
+        executorService.submit(() -> {
+            synchronized (userCurrentChannel) {
+                String currentChannelId = userCurrentChannel.get(userId);
+                if (currentChannelId != null) {
+                    String userChannelKey = userId + "-" + currentChannelId;
+                    UserResponseTracker tracker = userResponses.get(userChannelKey);
+                    if (tracker == null || responseText.isEmpty()) return;
 
-                tracker.recordResponse(responseText);
+                    tracker.recordResponse(responseText);
 
-                if (!tracker.isCompleted()) {
-                    sendQuestion(userId, currentChannelId);
-                } else {
-                    sendSummaryToChannels(userId, tracker);
-                    userResponses.remove(userChannelKey);
-                    userCurrentChannel.remove(userId);
-
-                    if (isUserSessionComplete(userId)) {
-                        completedUsers.put(userId, true);
+                    if (!tracker.isCompleted()) {
+                        sendQuestion(userId, currentChannelId);
                     } else {
-                        completedUsers.put(userChannelKey, true);
-                        notifyNextChannel(userId);
+                        sendSummaryToChannels(userId, tracker);
+                        userResponses.remove(userChannelKey);
+                        userCurrentChannel.remove(userId);
+
+                        if (isUserSessionComplete(userId)) {
+                            completedUsers.put(userId, true);
+                        } else {
+                            completedUsers.put(userChannelKey, true);
+                            notifyNextChannel(userId);
+                        }
                     }
                 }
             }
-        }
+        });
     }
 
     private List<String> getChannelMembers(String channelId) {
@@ -184,10 +189,18 @@ public class DailyBot {
     private void sendSummaryToChannels(String userId, UserResponseTracker tracker) {
         String userName = getUserName(userId);
         String currentDate = new SimpleDateFormat("EEEE, MMMM dd, yyyy").format(new Date());
-        StringBuilder summary = new StringBuilder("Daily Summary for ").append(userName).append(" on ").append(currentDate).append(": \n");
-        for (int i = 0; i < QUESTIONS.length; i++) {
-            summary.append(QUESTIONS[i]).append(": ").append(tracker.getResponse(i)).append("\n");
-        }
+
+        StringBuilder summary = new StringBuilder();
+        summary.append("📝 *Hello ").append(userName).append("! Here's your daily summary for ").append(currentDate).append(":*\n\n");
+
+        summary.append("**1. 🔙 What did you do yesterday?**\n");
+        summary.append("- ").append(tracker.getResponse(0)).append("\n\n");
+
+        summary.append("**2. 📅 What are you doing today?**\n");
+        summary.append("- ").append(tracker.getResponse(1)).append("\n\n");
+
+        summary.append("**3. ⛔️ Do you have any blockers?**\n");
+        summary.append("- ").append(tracker.getResponse(2)).append(" for today!\n");
 
         sendSummaryToChannel(tracker.getChannelId(), summary.toString());
     }
@@ -197,8 +210,9 @@ public class DailyBot {
             slack.methods(slackToken).chatPostMessage(ChatPostMessageRequest.builder()
                     .channel(channelId)
                     .text(summary)
+                    .mrkdwn(true)
                     .build());
-            System.out.println("Sent summary to channel: " + channelId); //debugging...
+            System.out.println("Sent summary to channel: " + channelId); // Debugging...
         } catch (IOException | SlackApiException e) {
             e.printStackTrace();
         }

@@ -9,7 +9,7 @@ import java.util.concurrent.Executors;
 
 public class DailyBotJob implements Job {
     static DailyBot bot;
-    private static final ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private static final ExecutorService executorService = Executors.newCachedThreadPool();
 
     public static void initializeBot(List<String> channelIds, String summaryChannelId, String slackToken, List<String> targetedEmails) {
         System.out.println("Initializing DailyBot with channels: " + channelIds + " and targeted emails: " + targetedEmails);
@@ -24,6 +24,6 @@ public class DailyBotJob implements Job {
         if (bot == null) {
             throw new IllegalStateException("DailyBot has not been initialized");
         }
-        executorService.submit(() -> bot.sendDailyQuestionsToChannelMembersSequentially());
+        executorService.submit(() -> bot.sendDailyQuestionsToChannelMembersConcurrently());
     }
 }

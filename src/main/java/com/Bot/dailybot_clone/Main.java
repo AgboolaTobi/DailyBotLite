@@ -1,4 +1,4 @@
-// Updated Main class to use environment variables
+
 
 package com.Bot.dailybot_clone;
 
@@ -9,6 +9,7 @@ import com.slack.api.methods.response.auth.AuthTestResponse;
 import io.github.cdimascio.dotenv.Dotenv;
 import spark.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
@@ -24,9 +25,13 @@ public class Main {
 		int port = Integer.parseInt(portEnv);
 
 		// Converted the comma-separated list of emails to a List
-		List<String> targetedEmails = List.of(targetedEmailsStr.replaceAll("\"", "").split(","));
+        List<String> targetedEmails = new ArrayList<>();
+        for (String mail : List.of(targetedEmailsStr.replaceAll("\"", "").split(","))) {
+            String trim = mail.trim();
+            targetedEmails.add(trim);
+        }
 
-		// Ensured environment variables are loaded
+        // Ensured environment variables are loaded
 		if (slackToken == null || slackToken.isEmpty() || targetChannelId == null || targetChannelId.isEmpty()) {
 			System.err.println("Error: Missing required configuration");
 			System.exit(1);
